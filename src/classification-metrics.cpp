@@ -5,6 +5,9 @@
 
 //Functions to calculate standard classification metrics precision, recall, r1, accuracy
 
+/* TODO: Add TPR (just precision) and FPR for auroc implementation
+*/
+
 double calculate_precision(int TP, int FP) {
     if (TP + FP == 0) return 0.0;
     return static_cast<double>(TP) / (TP + FP);
