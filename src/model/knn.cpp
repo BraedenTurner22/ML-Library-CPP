@@ -147,4 +147,54 @@ public:
         this->X_train = X_train;
         this->y_train = y_train;
     }
+
+    Labels predict(const Dataset& X_test, int k) {
+        Labels predictions;
+
+        // Build distance and label pairs
+        for (const auto& test_instance : X_test) {
+            std::vector<std::pair<double, int>> distances;
+            distances.reserve(X_train.size());
+            for (size_t i = 0; i < X_train.size(); ++i)
+                distances.emplace_back(euclidean_distance(test_instance, X_train[i]), y_train[i]);
+            
+
+            // parital sort to get k nearest
+            std::partial_sort(distances.begin(), distances.begin() + k, distances.end());
+
+            // majority vote, map is label (0,1) -> vote count
+            std::map<int, int> vote_count;
+            for (int j = 0; j < k; ++j)
+                vote_count[distances[j].second]++;
+            
+            // Find the majority label count of the k nearest neighbors, append it to predictions
+            int best_label = std::max_element(vote_count.begin(), vote_count.end(), [](const auto& a, const auto& b){ return a.second < b.second; })->first;
+
+            predictions.push_back(best_label);
+        }
+        return predictions;
+    }
+
+    double evaluate_accuracy(Labels& predictions, Labels& y_test) {
+        // Returns the ratio of correctly predicted labesl to total test labels
+        int correct_matches = 0;
+
+        for (size_t i = 0; i < y_test.size(); ++i)
+            if (predictions[i] == y_test[i])
+                correct_matches += 1;
+        
+        return std::round(static_cast<double>(correct_matches) / predictions.size() * 1000.0) / 1000.0;
+
+    }
+
+    // Trial Runner
+    struct TrialResults {
+        std::vector<int> k_values;
+        std::map<int, std::vector<double>> train_results;
+        std::map<int, std::vector<double>> test_results;
+    };
+
+    TrialResults run_trials(const std::string& dataset_path, int num_trials = 20) {
+        
+    }
 };
