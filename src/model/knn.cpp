@@ -195,6 +195,72 @@ public:
     };
 
     TrialResults run_trials(const std::string& dataset_path, int num_trials = 20) {
-        
+        std::vector<int> k_values;
+
+        // Iterating for all values of k 1->51
+        for (int k=1; k <= 51; k += 2) k_values.push_back(k);
+
+        // Initialize empty maps
+        std::map<int, std::vector<double>> train_results, test_results;
+        for (int k : k_values) {
+            train_results[k] = {};
+            test_results[k] = {};
+        }
+
+        auto [X_raw, y_raw] = load_dataset(dataset_path, false);
+        auto mins = find_min_features(X_raw);
+        auto maxes = find_max_features(X_raw);
+        auto X_normalized = normalize_features(X_raw, maxes, mins);
+
+        // Run actual trial protocol (shuffle, split, predict, evaluate accuracy)
+        for (int trial  = 0; trial < num_trials; ++trial) {
+            Dataset X_s = X_normalized;
+            Labels y_s = y_raw;
+            shuffle_dataset(X_s, y_s);
+
+            SplitData sd = split_data(X_s, y_s);
+            fit(sd.X_train, sd.y_train);
+
+            for (int k : k_values) {
+                auto train_preds = predict(sd.X_train, k);
+                auto test_preds = predict(sd.X_test, k);
+
+                train_results[k].push_back(evaluate_accuracy(train_preds, sd.y_train));
+                train_results[k].push_back(evaluate_accuracy(train_preds, sd.y_train));
+            }
+
+            std::cout << "Trial " << trial + 1 << "/" << num_trials << " complete.\n";
+        }
+    }
+
+    // Exportable csv to analyze data
+    void export_results_csv(const TrialResults& results, const std::string& filename) {
+
+        std::ofstream f(filename);
+
+        f << "k,mean_train,stdev_train,mean_test,stdev_test\n";
+
+        for (int k : results.k_values) {
+            const auto& tr = results.train_results.at(k);
+            const auto& te = results.test_results.at(k);
+
+            f << k << "," << mean(tr)  << "," << stdev(tr) << "," << mean(te)  << "," << stdev(te) << "\n";
+        }
+
+        std::cout << "Results written to " << filename << "\n";
     }
 };
+
+
+    // Main
+    int main() {
+        KNN knn;
+        std::cout << "Running 20 trials for k = 1 to 51 (odd values only). "
+                    "This may take a while...\n";
+
+        auto results = knn.run_trials("datasets/wdbc.csv", 20);
+        knn.export_results_csv(results, "knn_results.csv");
+
+        std::cout << "Finished!\n";
+        return 0;
+    }
