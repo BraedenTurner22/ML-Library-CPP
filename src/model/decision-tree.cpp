@@ -14,10 +14,7 @@
 #include <iomanip>
 #include <memory>
 
-// ─────────────────────────────────────────────
 //  TreeNode
-// ─────────────────────────────────────────────
-
 struct TreeNode {
     int    feature_index = -1;          // -1 means this is a leaf
     std::string label;                  // set for leaf nodes
@@ -27,5 +24,6 @@ struct TreeNode {
 };
 
 class DecisionTree {
-
+    public:
+        DecisionTree(): root(nullptr) {}
 }
